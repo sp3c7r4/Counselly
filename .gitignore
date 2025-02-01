@@ -1,5 +1,5 @@
 # Node modules Folder
-/node-modules
+/node_modules
 
 # Environment Variables
 .env
