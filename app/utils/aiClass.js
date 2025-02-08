@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getChatHistory } from "./controller/chatController.js";
-import Chat from "./model/chatModel.js";
+import Chat from "../model/chatModel.js";
 import {config} from 'dotenv'
 
 config()
@@ -48,6 +47,7 @@ Always respond concisely, naturally, and empathetically.
 Never provide generic or robotic answers—make each response feel personalized.
 Keep responses engaging, warm, and professional.
 `
+
 export default class AiClass {
   constructor(userId, chatId, userMessage) {
     this.userId = userId
@@ -55,34 +55,24 @@ export default class AiClass {
     this.userMessage = userMessage
   }
 
-  storeAiChat() {
-
+  async initializeAiChat() {
+    if (this.chatId) {
+      return await this.storeAiChat()
+    }
+    // console.log(this.userId, this.chatId, this.userMessage)
+    return await this.createAiChat()
   }
 
-  fetchAiChat() {
-
-  }
-
-  getChatHistory() {
-
-  }
-
-}
-
-
-const aiChat = async (userId, userMessage, chatId) => {
-  console.log(process.env.GOOGLE_API_KEY)
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-  // Set the system instruction during model initialization
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp",
-    systemInstruction: counscellingPrompt,
-  });
-
-  if (chatId) {
+  async storeAiChat() {
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    // Set the system instruction during model initialization
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-exp",
+      systemInstruction: counscellingPrompt,
+    });
     // Fetch chat history from the database
-    const chatHistory = await getChatHistory(userId, chatId);
-    
+    const chatHistory = await this.getChatHistory(this.userId, this.chatId);
+      
     // Initialize the chat with the fetched history
     const chat = model.startChat({
       history: chatHistory.map(entry => ({
@@ -91,12 +81,41 @@ const aiChat = async (userId, userMessage, chatId) => {
       })),
     });
     
-    const result = await chat.sendMessage(userMessage);
+    const result = await chat.sendMessage(this.userMessage);
     const createChats = await Chat.findOneAndUpdate(
-      { user_id: userId },
-      { $push: { history: { user: userMessage, model: result.response.text() } } },
+      { user_id: this.userId, _id: this.chatId },
+      { $push: { history: { user: this.userMessage, model: result.response.text() } } },
       { upsert: true, new: true }
     );
     return createChats;
   }
+
+  async createAiChat() {
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    // Set the system instruction during model initialization
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-exp",
+      systemInstruction: counscellingPrompt,
+    });
+    // Initialize the chat with the fetched history
+    const chat = model.startChat({});
+    
+    const result = await chat.sendMessage(this.userMessage);
+    // console.log("Create Ai Chat:", this.userMessage, result.response.text())
+    const createChats = await Chat.create({
+      user_id: this.userId,
+      chat_name: this.userMessage,
+      history: [{ user: this.userMessage, model: result.response.text() }]
+    });
+    console.log(createChats)
+    return createChats;
+  }
+
+  async getChatHistory () {
+    const chat = await Chat.findOne({ user_id: this.userId, _id: this.chatId });
+    if (!chat) {
+      return [];
+    }
+    return chat.history;
+  };
 }

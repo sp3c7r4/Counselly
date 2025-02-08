@@ -1,41 +1,36 @@
 import express from "express";
 import { config } from "dotenv";
-import connectDB from "./db/connectDB.js";
-import User from "./model/userModel.js";
-import Chat from "./model/chatModel.js";
-import { createChat, getChats } from "./controller/chatController.js";
-import { registerUser } from "./controller/userController.js";
+import userRoutes from './routes/userRoutes.js'
+import chatRoutes from './routes/chatRoutes.js'
+import connectDB from "./utils/connectDB.js";
+import logger from './utils/logger.js'
+import ip from 'ip'
+import errorHandler from "./routes/middlewares/errorMiddleware.js";
 
 config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DATABASE_URL =
-  process.env.DATABASE_URL || "mongodb://127.0.0.1:27017/counselly";
+const DATABASE_URL = process.env.DATABASE_URL;
 
 connectDB(DATABASE_URL);
 
 app.use(express.json());
-// Routes Definition
+
+// user Routes
+app.use('/user', userRoutes)
+
+// chatRoutes
+app.use('/chat', chatRoutes)
+
+// Home Routes
 app.get("/", (_, res) => {
   res.status(200).send("Server working perfectly!!!");
 });
 
-app.post("/register", async (req, res) => {
-  const register = await registerUser(req.body.name, req.body.email, req.body.password)
-  res.status(201).send(register)
-});
-app.post("/prompt", async (req, res) => {
-  const createChats = await createChat(
-    req.body.id,
-    req.body.chat
-  );
-  res.status(201).send(createChats);
-});
+app.use(errorHandler)
 
-app.get("/chat", async(req, res) => {
-  console.log(req.query)
-  const getChat = await getChats(req.query.userid)
-  res.status(200).send(getChat)
-})
-app.listen(PORT, () => console.log(`Server started on ${PORT}`));
+app.listen(PORT, () => {
+  logger.info(`Server running on: ${ip.address()}:${PORT}`)
+  console.log(`Server started on ${PORT}`)
+});
