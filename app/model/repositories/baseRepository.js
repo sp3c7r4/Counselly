@@ -36,7 +36,7 @@ export default class BaseRepository {
   // Read user data by id
   async readOneById(id) {
     try {
-      const findOne = await this.model.findOne({ id });
+      const findOne = await this.model.findOne({ _id: id });
       return findOne;
     } catch (err) {
       schoolLogger.log(
@@ -86,7 +86,7 @@ export default class BaseRepository {
 
   async readAllByID(user_id) {
     try {
-      return await this.model.find({user_id});
+      return await this.model.find({user_id });
     } catch (err) {
       schoolLogger.log(
         'error',

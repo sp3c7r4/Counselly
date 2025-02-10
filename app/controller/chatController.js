@@ -4,6 +4,7 @@ import User from "../model/userModel.js";
 import AiClass from '../utils/aiClass.js'
 import HttpStatus from "../utils/http.js";
 import Response from '../domain/reponse.js'
+import ChatRepository from './../model/repositories/chatRepository.js'
 
 export const storeChat = async (userId, chatId=null, userMessage) => {
   console.log(userId, userMessage)
@@ -29,5 +30,19 @@ export const storeChat = async (userId, chatId=null, userMessage) => {
 export const getChats = async(userId) => {
   console.log(userId)
   const fetchAllChats = await ChatRepository.readAllChatDataByID(userId)
-  return fetchAllChats;
+  console.log("FetchAllChats: ",fetchAllChats)
+  const message = "Message Fetched!!!"
+  const statusCode = HttpStatus.OK.code
+  const statusMessage = HttpStatus.OK.status
+  return new Response(statusCode, statusMessage, message, fetchAllChats)
+}
+
+export const getChatByID = async(chatId) => {
+  console.log(chatId)
+  const getChatsById = await ChatRepository.readChatDataById(chatId)
+  console.log(getChatsById)
+  const message = "Message Fetched!!!"
+  const statusCode = HttpStatus.OK.code
+  const statusMessage = HttpStatus.OK.status
+  return new Response(statusCode, statusMessage, message, getChatsById)
 }
